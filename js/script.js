@@ -1,25 +1,103 @@
-"use strict";
+// 3. Находим элементы строго по ID и классам из вашего HTML
+const searchInput = document.getElementById('search-input');
+const addForm = document.getElementById('idea-form');
+const cardContainer = document.getElementById('ideas-list');
+const favoriteCounter = document.getElementById('favorite-count');
 
-const searchInput = document.querySelector("#search-input");
-const ideaForm = document.querySelector("#idea-form");
-const ideaInput = document.querySelector("#idea-input");
-const list = document.querySelector("#ideas-list");
-const count = document.querySelector("#favorite-count");
-const status = document.querySelector("#board-status");
-
-function updateCount() {
-  count.textContent = list.querySelectorAll(".fav-button.is-favorite").length;
+// Функция обновления счетчика избранного (Пункт 7)
+function updateFavoriteCount() {
+    if (!favoriteCounter || !cardContainer) return;
+    // Считаем кнопки, у которых добавлен класс active
+    const activeFavorites = cardContainer.querySelectorAll('.fav-button.active').length;
+    favoriteCounter.textContent = activeFavorites;
 }
 
-// Задание 1. На input в searchInput переберите .idea-card через querySelectorAll().
-// Сравните data-title с запросом в нижнем регистре и переключите is-hidden.
+// Функция фильтрации карточек (Пункт 4)
+function filterCards(query) {
+    const cleanQuery = query.toLowerCase().trim();
+    const cards = cardContainer.querySelectorAll('.idea-card');
 
-// Задание 2. На keydown в searchInput обработайте Escape:
-// очистите поле и вызовите обновление поиска (можно dispatchEvent(new Event("input"))).
+    cards.forEach(card => {
+        const title = (card.dataset.title || '').toLowerCase();
+        if (title.includes(cleanQuery)) {
+            card.style.display = ''; // Показываем подходящие
+        } else {
+            card.style.display = 'none'; // Скрываем неподходящие
+        }
+    });
+}
 
-// Задание 3. На submit формы создайте li.idea-card, span и button.fav-button.
-// Запишите data-title, добавьте в список и очистите поле.
-// Обновите фильтр, чтобы новая карточка сразу отображалась корректно.
+// 4. Фильтрация по событию input
+searchInput.addEventListener('input', (e) => {
+    filterCards(e.target.value);
+});
 
-// Задание 4. Подключите один click к list. Найдите .fav-button через closest().
-// Переключите is-favorite, aria-pressed и символ ☆ / ★. Вызовите updateCount().
+// 5. Обработка Escape в поле поиска
+searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        searchInput.value = '';
+        filterCards('');
+    }
+});
+
+// 6. Создание новой карточки на submit формы
+addForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    // Получаем инпут внутри формы по его ID
+    const inputField = document.getElementById('idea-input');
+    const text = inputField.value.trim();
+    
+    if (!text) return;
+
+    // Создаем элемент списка <li>, как в вашем HTML
+    const newCard = document.createElement('li');
+    newCard.classList.add('idea-card');
+    newCard.dataset.title = text; // Устанавливаем data-title для фильтрации
+
+    // Копируем структуру разметки карточки из вашего HTML
+    newCard.innerHTML = `
+        <span>${text}</span>
+        <button 
+            class="fav-button" 
+            type="button" 
+            aria-label="Добавить в избранное" 
+            aria-pressed="false"
+        >☆</button>
+    `;
+
+    // Добавляем новую карточку в список
+    cardContainer.appendChild(newCard);
+
+    // Учитываем текущий фильтр поиска
+    filterCards(searchInput.value);
+
+    // Очищаем поле ввода формы
+    addForm.reset();
+});
+
+// 7. Один обработчик click на общий список (Делегирование)
+cardContainer.addEventListener('click', (e) => {
+    // Проверяем клик по кнопке с классом fav-button
+    if (e.target.classList.contains('fav-button')) {
+        const btn = e.target;
+        
+        // Переключаем класс active
+        btn.classList.toggle('active');
+        
+        // Меняем символ звезды и aria-pressed в зависимости от состояния
+        if (btn.classList.contains('active')) {
+            btn.textContent = '★';
+            btn.setAttribute('aria-pressed', 'true');
+        } else {
+            btn.textContent = '☆';
+            btn.setAttribute('aria-pressed', 'false');
+        }
+
+        // Обновляем счётчик избранного
+        updateFavoriteCount();
+    }
+});
+
+// Первоначальный расчёт счётчика при загрузке страницы
+updateFavoriteCount();
